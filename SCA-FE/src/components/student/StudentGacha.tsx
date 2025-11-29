@@ -111,13 +111,25 @@ export function StudentGacha() {
           const drawnFish = result.data.drawn_fish;
           console.log('Gacha result:', result.data);
           console.log('Drawn fish:', drawnFish);
-          console.log('Fish name:', drawnFish?.fish_name);
+          console.log('Fish name (raw):', drawnFish?.fish_name);
+          console.log('Fish name (type):', typeof drawnFish?.fish_name);
           
           // 데이터 검증 및 정리
           if (drawnFish) {
+            // fish_name이 깨진 경우를 대비한 검증
+            let fishName = drawnFish.fish_name;
+            if (!fishName || typeof fishName !== 'string' || fishName.length === 0) {
+              console.warn('Invalid fish_name, using fallback');
+              fishName = '알 수 없는 물고기';
+            }
+            
             setResultFish({
-              ...drawnFish,
-              fish_name: drawnFish.fish_name || '알 수 없는 물고기'
+              fish_id: drawnFish.fish_id,
+              fish_name: fishName,
+              grade: drawnFish.grade,
+              is_new: drawnFish.is_new || false,
+              current_count: drawnFish.current_count || 0,
+              image_url: drawnFish.image_url || ''
             });
           }
           setStudentCoral(result.data.remaining_coral); // 남은 코랄 업데이트
