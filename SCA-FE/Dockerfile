@@ -6,8 +6,10 @@ WORKDIR /app
 # package.json과 package-lock.json 복사
 COPY package*.json ./
 
-# 의존성 설치
-RUN npm ci --legacy-peer-deps
+# 의존성 설치 (캐시 무시하고 완전히 새로 설치)
+RUN rm -rf node_modules package-lock.json && \
+    npm install --legacy-peer-deps && \
+    npm cache clean --force
 
 # 소스 코드 복사
 COPY . .
