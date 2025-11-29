@@ -345,9 +345,9 @@ export function QuestApprovalPageNew() {
                 </div>
 
                 {/* Attachment */}
-                {selectedQuestDetail.submission.attachment_url && (
-                  <div className="mt-3">
-                    <p className="text-sm text-gray-600 mb-2 font-medium">첨부 파일</p>
+                <div className="mt-3">
+                  <p className="text-sm text-gray-600 mb-2 font-medium">첨부 파일</p>
+                  {selectedQuestDetail.submission.attachment_url ? (
                     <a
                       href={selectedQuestDetail.submission.attachment_url}
                       target="_blank"
@@ -370,8 +370,12 @@ export function QuestApprovalPageNew() {
                         </p>
                       </div>
                     </a>
-                  </div>
-                )}
+                  ) : (
+                    <div className="border-2 border-gray-300 rounded-lg p-4 bg-gray-50 text-center min-h-[100px] flex items-center justify-center">
+                      <p className="text-gray-500 text-sm">첨부파일이 없습니다.</p>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Teacher Feedback Section */}
