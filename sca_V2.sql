@@ -64,7 +64,7 @@ DROP TABLE IF EXISTS students_quest_factors;
 CREATE TABLE students_quest_factors (
   id BIGINT NOT NULL AUTO_INCREMENT, -- Primary Key
   student_factor_id BIGINT NOT NULL, -- students_factors 참조
-  difficulty INT NOT NULL, -- 난이도
+  difficulty ENUM('EASY', 'BASIC', 'MEDIUM', 'HARD', 'VERY_HARD') NOT NULL, -- 난이도
   factor_value DOUBLE NOT NULL, -- 해당 난이도 보정계수
   learning_count INT NOT NULL DEFAULT 0, -- 해당 난이도 학습 횟수
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, -- 생성일
@@ -99,7 +99,7 @@ CREATE TABLE quests (
   reward_coral_default INT DEFAULT 0, -- 코랄 보상
   reward_research_data_default INT DEFAULT 0, -- 탐사데이터 보상
   deadline DATETIME, -- 마감일
-  difficulty INT NOT NULL, -- 난이도
+  difficulty ENUM('EASY', 'BASIC', 'MEDIUM', 'HARD', 'VERY_HARD'), -- 난이도
   deleted_at DATETIME DEFAULT NULL, -- Soft Delete
   PRIMARY KEY (quest_id)
 );
@@ -163,15 +163,15 @@ CREATE TABLE raids (
   teacher_id INT NOT NULL, -- 교사 id
   class_id INT NOT NULL, -- 학급 id
   raid_name VARCHAR(120) NOT NULL, -- 레이드 제목
+  boss_type ENUM('ZELUS_INDUSTRY', 'KRAKEN') NOT NULL,
+  difficulty ENUM('LOW', 'MEDIUM', 'HIGH') NOT NULL, -- 난이도
+  status ENUM('ACTIVE','COMPLETED','EXPIRED','TERMINATED') NOT NULL DEFAULT 'ACTIVE', -- 진행상황
   start_date DATETIME NOT NULL, -- 시작일
   end_date DATETIME NOT NULL, -- 종료일
   total_boss_hp BIGINT NOT NULL, -- 총 보스 HP
   current_boss_hp BIGINT NOT NULL, -- 현재 보스 HP
   reward_coral INT DEFAULT 0, -- 코랄 보상
   special_reward_description TEXT, -- 보상 정보
-  status ENUM('ACTIVE','COMPLETED','EXPIRED','TERMINATED') NOT NULL DEFAULT 'ACTIVE', -- 진행상황
-  boss_type ENUM('ZELUS_INDUSTRY', 'KRAKEN') NOT NULL,
-  difficulty ENUM('LOW', 'MEDIUM', 'HIGH') NOT NULL, -- 난이도
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP, -- 테이블 생성 시간
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, -- 마지막 업데이트 시간
   PRIMARY KEY (raid_id)
@@ -181,14 +181,14 @@ CREATE TABLE raids (
 DROP TABLE IF EXISTS contributions;
 CREATE TABLE contributions (
   contribution_id INT NOT NULL AUTO_INCREMENT, -- Primary Key
-  raid_id INT, -- 레이드 id
-  student_id INT, -- 학생 id
+  raid_id INT NOT NULL, -- 레이드 id
+  student_id INT NOT NULL, -- 학생 id
   damage INT NOT NULL DEFAULT 0, -- 대미지
   last_attack_at DATETIME DEFAULT NULL,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP, -- 테이블 생성 시간
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, -- 마지막 기여 시간
   PRIMARY KEY (contribution_id),
-  UNIQUE KEY UK_CONTRIBUTION_RAID_STUDENT (raid_id, student_id),
+  UNIQUE KEY UK_CONTRIBUTION_RAID_STUDENT (raid_id, student_id)
 );
 
 -- raid_logs (선택적 레이드 로그)
@@ -224,8 +224,8 @@ INSERT INTO fish (fish_name, grade, probability) VALUES
 ('열대어', 'COMMON', 0.10),
 ('해마', 'COMMON', 0.10),
 ('복어', 'COMMON', 0.10),
-('흰동가리', 'COMMON', 0.10),
 ('금붕어', 'COMMON', 0.10),
+('흰동가리', 'COMMON', 0.10),
 ('구피', 'COMMON', 0.10),
 -- RARE (4개)
 ('바다거북', 'RARE', 0.0625),
@@ -293,7 +293,7 @@ CREATE TABLE ai_learning_logs (
   id BIGINT NOT NULL AUTO_INCREMENT, -- Primary Key
   assignment_id INT NOT NULL, -- 퀘스트 할당 ID (quest_assignments)
   student_id INT NOT NULL, -- 학생 ID
-  difficulty INT NOT NULL, -- 퀘스트 난이도
+  difficulty ENUM('EASY', 'BASIC', 'MEDIUM', 'HARD', 'VERY_HARD') NOT NULL, -- 퀘스트 난이도
   cognitive_score INT NOT NULL, -- 인지과정 점수
   effort_score INT NOT NULL, -- 예상 노력 점수
   ai_coral INT NOT NULL, -- AI 추천 코랄
@@ -377,7 +377,7 @@ ALTER TABLE contributions
 
 -- raid_logs
 ALTER TABLE raid_logs
-  ADD CONSTRAINT FK_RAID_LOG_RAID FOREIGN KEY (raid_id) REFERENCES raids (raid_id) ON DELETE CASCADE;
+  ADD CONSTRAINT FK_RAID_LOG_RAID FOREIGN KEY (raid_id) REFERENCES raids (raid_id) ON DELETE CASCADE,
   ADD CONSTRAINT FK_RAID_LOG_STUDENT FOREIGN KEY (student_id) REFERENCES students (member_id) ON DELETE SET NULL;
 
 -- fish
@@ -399,7 +399,7 @@ ALTER TABLE notice
   ADD CONSTRAINT FK_NOTICE_ASSIGNMENTS FOREIGN KEY (assignment_id) REFERENCES quest_assignments (assignment_id) ON DELETE SET NULL,
   ADD CONSTRAINT FK_NOTICE_GROUP_QUESTS FOREIGN KEY (group_quest_id) REFERENCES group_quests (group_quest_id) ON DELETE SET NULL,
   ADD CONSTRAINT FK_NOTICE_RAIDS FOREIGN KEY (raid_id) REFERENCES raids (raid_id) ON DELETE SET NULL,
-  ADD INDEX IDX_NOTICE_STUDENT_CREATED (student_id, created_at DESC),
+  ADD INDEX IDX_NOTICE_STUDENT_CREATED (student_id, created_at),
   ADD INDEX IDX_NOTICE_TYPE (notice_type);
 
 -- action_logs
@@ -408,7 +408,7 @@ ALTER TABLE action_logs
   ADD CONSTRAINT FK_LOGS_ASSIGNMENTS FOREIGN KEY (assignment_id) REFERENCES quest_assignments (assignment_id) ON DELETE SET NULL,
   ADD CONSTRAINT FK_LOGS_GROUP_QUESTS FOREIGN KEY (group_quest_id) REFERENCES group_quests (group_quest_id) ON DELETE SET NULL,
   ADD CONSTRAINT FK_LOGS_RAIDS FOREIGN KEY (raid_id) REFERENCES raids (raid_id) ON DELETE SET NULL,
-  ADD INDEX IDX_LOGS_STUDENT_CREATED (student_id, created_at DESC),
+  ADD INDEX IDX_LOGS_STUDENT_CREATED (student_id, created_at),
   ADD INDEX IDX_LOGS_ACTION_TYPE (action_type);
 
 -- ai_learning_logs

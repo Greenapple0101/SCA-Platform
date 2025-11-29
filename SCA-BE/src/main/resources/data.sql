@@ -15,8 +15,8 @@ INSERT INTO fish (fish_name, grade, probability) VALUES
 ('열대어', 'COMMON', 0.10),
 ('해마', 'COMMON', 0.10),
 ('복어', 'COMMON', 0.10),
-('흰동가리', 'COMMON', 0.10),
 ('금붕어', 'COMMON', 0.10),
+('흰동가리', 'COMMON', 0.10),
 ('구피', 'COMMON', 0.10),
 -- RARE (4개)
 ('바다거북', 'RARE', 0.0625),

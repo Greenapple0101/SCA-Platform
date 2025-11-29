@@ -85,24 +85,14 @@ export function StudentCollection() {
         const resJson = await response.json();
         const data = resJson.data;
 
-        const converted: UIFish[] = (data.collected_fish as AquariumFishItem[]).map(item => {
-          // 흰동가리(fish_id: 5)와 금붕어(fish_id: 6) 이름 교체
-          let fishName = item.fish_name;
-          if (item.fish_id === 5) {
-            fishName = "금붕어";
-          } else if (item.fish_id === 6) {
-            fishName = "흰동가리";
-          }
-          
-          return {
-            fish_id: item.fish_id,
-            fish_name: fishName,
-            grade: item.grade as FishGrade,
-            current_count: item.fish_count,
-            is_owned: true,
-            size: getFishSize(item.grade as FishGrade)
-          };
-        });
+        const converted: UIFish[] = (data.collected_fish as AquariumFishItem[]).map(item => ({
+          fish_id: item.fish_id,
+          fish_name: item.fish_name,
+          grade: item.grade as FishGrade,
+          current_count: item.fish_count,
+          is_owned: true,
+          size: getFishSize(item.grade as FishGrade)
+        }));
 
         setFishList(converted);
         setStats({ current: converted.length, total: 0 }); // 수족관은 종류 수만 표시하거나 총 마리수 표시
@@ -114,24 +104,14 @@ export function StudentCollection() {
         const resJson = await response.json();
         const data = resJson.data;
 
-        const converted: UIFish[] = (data.fish_list as EncyclopediaFishItem[]).map(item => {
-          // 흰동가리(fish_id: 5)와 금붕어(fish_id: 6) 이름 교체
-          let fishName = item.fish_name;
-          if (item.fish_id === 5) {
-            fishName = "금붕어";
-          } else if (item.fish_id === 6) {
-            fishName = "흰동가리";
-          }
-          
-          return {
-            fish_id: item.fish_id,
-            fish_name: fishName,
-            grade: item.grade as FishGrade,
-            current_count: item.fish_count,
-            is_owned: item.is_collected,
-            size: getFishSize(item.grade as FishGrade)
-          };
-        });
+        const converted: UIFish[] = (data.fish_list as EncyclopediaFishItem[]).map(item => ({
+          fish_id: item.fish_id,
+          fish_name: item.fish_name,
+          grade: item.grade as FishGrade,
+          current_count: item.fish_count,
+          is_owned: item.is_collected,
+          size: getFishSize(item.grade as FishGrade)
+        }));
 
         setFishList(converted);
         setStats({ current: data.collected_count, total: data.total_fish });
