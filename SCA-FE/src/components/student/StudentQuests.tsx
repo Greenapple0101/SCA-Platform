@@ -255,20 +255,21 @@ export function StudentQuests() {
         payload: JSON.parse(JSON.stringify(payload)) // 순환 참조 방지
       });
 
-      try {
-        const response = await apiCall(endpoint, {
-          method: method,
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(payload)
-        });
+      const response = await apiCall(endpoint, {
+        method: method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload)
+      });
 
       console.log('[퀘스트 제출] 제출 응답 상태:', response.status);
 
       const data = await response.json();
+      console.log('[퀘스트 제출] 제출 응답 전체:', JSON.stringify(data, null, 2));
       
       if (!response.ok || !data.success) {
+        console.error('[퀘스트 제출] 제출 실패:', data);
         throw new Error(data.message || '제출에 실패했습니다.');
       }
 
@@ -279,6 +280,12 @@ export function StudentQuests() {
       fetchAllQuests(); // 퀘스트 목록 새로고침
 
     } catch (err) {
+      console.error('[퀘스트 제출] 제출 중 예외 발생:', err);
+      console.error('[퀘스트 제출] 에러 상세:', {
+        message: (err as Error).message,
+        stack: (err as Error).stack,
+        name: (err as Error).name
+      });
       setSubmitError((err as Error).message);
     } finally {
       setIsSubmitting(false);
