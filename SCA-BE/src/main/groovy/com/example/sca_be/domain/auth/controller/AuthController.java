@@ -114,4 +114,20 @@ public class AuthController {
                 .status(HttpStatus.OK)
                 .body(ApiResponse.success("비밀번호가 변경되었습니다."));
     }
+
+    // 8. 회원 탈퇴
+    @DeleteMapping("/me")
+    @PreAuthorize("hasRole('TEACHER')")
+    public ResponseEntity<ApiResponse<Void>> deleteAccount(
+            Authentication authentication,
+            @Valid @RequestBody AccountDeleteRequest request) {
+        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+        Integer memberId = userDetails.getMemberId();
+        
+        authService.deleteAccount(memberId, request);
+        
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(ApiResponse.success("회원 탈퇴가 완료되었습니다."));
+    }
 }

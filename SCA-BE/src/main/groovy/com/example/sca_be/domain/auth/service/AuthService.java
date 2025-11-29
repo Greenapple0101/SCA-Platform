@@ -368,4 +368,19 @@ public class AuthService {
                 .createdAt(member.getCreatedAt() != null ? member.getCreatedAt().toString() : null)
                 .build();
     }
+
+    // 9. 회원 탈퇴
+    @Transactional
+    public void deleteAccount(Integer memberId, AccountDeleteRequest request) {
+        Member member = memberRepository.findById(memberId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        // 비밀번호 확인
+        if (!passwordEncoder.matches(request.getPassword(), member.getPassword())) {
+            throw new CustomException(ErrorCode.INVALID_CREDENTIALS, "비밀번호가 일치하지 않습니다.");
+        }
+
+        // Soft Delete (deleted_at 설정)
+        memberRepository.delete(member);
+    }
 }
