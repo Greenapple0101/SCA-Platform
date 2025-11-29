@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Comparator;
 import java.util.stream.Collectors;
 
 @Service
@@ -73,8 +74,10 @@ public class CollectionService {
         Student student = studentRepository.findById(studentId)
                 .orElseThrow(() -> new CustomException(ErrorCode.STUDENT_NOT_FOUND));
 
-        // 2. 전체 물고기 목록 조회
-        List<Fish> allFish = fishRepository.findAll();
+        // 2. 전체 물고기 목록 조회 (fish_id 순서로 정렬)
+        List<Fish> allFish = fishRepository.findAll().stream()
+                .sorted(Comparator.comparing(Fish::getFishId))
+                .collect(Collectors.toList());
 
         // 3. 학생의 컬렉션 조회
         Collection collection = collectionRepository.findByStudent(student)

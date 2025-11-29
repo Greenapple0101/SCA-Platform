@@ -414,21 +414,23 @@ export function StudentCollection() {
                         style={{
                           cursor: fish.is_owned ? "pointer" : "default",
                           opacity: fish.is_owned ? 1 : 0.5,
-                          backgroundColor: fish.is_owned ? "#fff" : "#eee"
+                          backgroundColor: fish.is_owned ? "#fff" : "#eee",
+                          height: "auto",
+                          minHeight: fish.fish_id === 12 ? "140px" : "120px"
                         }}
                       >
-                        <div className="window-body" style={{ textAlign: "center", padding: "5px" }}>
-                          <div style={{ height: "50px", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "5px", objectFit: "contain" }}>
+                        <div className="window-body" style={{ textAlign: "center", padding: "8px", display: "flex", flexDirection: "column", justifyContent: "space-between", minHeight: fish.fish_id === 12 ? "120px" : "100px" }}>
+                          <div style={{ height: fish.fish_id === 12 ? "70px" : "50px", display: "flex", alignItems: "flex-end", justifyContent: "center", marginBottom: "5px", objectFit: "contain", flexShrink: 0, overflow: "visible" }}>
                             {fish.is_owned ? (
-                              renderFishSprite(fish, 2)
+                              renderFishSprite(fish, fish.fish_id === 12 ? 0.85 : fish.grade === 'LEGENDARY' ? 1.0 : 2)
                             ) : (
                               <span style={{ fontSize: "30px" }}>❓</span>
                             )}
                           </div>
-                          <div style={{ fontSize: "12px", fontWeight: "bold", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          <div style={{ fontSize: "11px", fontWeight: "bold", wordBreak: "break-word", lineHeight: "1.3", display: "flex", alignItems: "center", justifyContent: "center", flex: 1, padding: "2px 0" }}>
                             {fish.fish_name}
                           </div>
-                          <div style={{ fontSize: "10px", marginTop: "2px", color: getGradeColor(fish.grade) }}>
+                          <div style={{ fontSize: "9px", marginTop: "4px", color: getGradeColor(fish.grade), flexShrink: 0 }}>
                             {fish.grade}
                           </div>
                         </div>
