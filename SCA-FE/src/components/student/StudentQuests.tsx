@@ -165,31 +165,64 @@ export function StudentQuests() {
       return;
     }
 
-    // 파일 업로드하려면 백엔드 컨트롤러 변경 필요(@RequestBody->@ModelAttribute)
-    /* if (!submitText.trim() && attachedFiles.length === 0) {
-      setSubmitError('제출 내용이나 첨부파일 중 하나는 필수입니다.');
-      return;
-    } */
-
     setIsSubmitting(true);
     setSubmitError(null);
-
-    const formData = new FormData();
-    formData.append('content', submitText);
-    if (attachedFiles.length > 0) {
-      formData.append('attachment', attachedFiles[0]);
-    }
 
     const method = selectedQuest.status === 'REJECTED' ? 'PUT' : 'POST';
     const endpoint = `/api/v1/quests/personal/${selectedQuest.assignment_id}/submit`;
 
     try {
+      let attachmentUrl: string | null = null;
+
+      // 첨부파일이 있으면 먼저 업로드
+      if (attachedFiles.length > 0) {
+        const file = attachedFiles[0];
+        const fileType = file.type;
+
+        // 파일 타입에 따라 적절한 엔드포인트 선택
+        let uploadEndpoint: string;
+        let formDataKey: string;
+
+        if (fileType.startsWith('image/')) {
+          uploadEndpoint = '/api/v1/images/upload';
+          formDataKey = 'image';
+        } else if (fileType === 'application/pdf') {
+          uploadEndpoint = '/api/v1/documents/upload';
+          formDataKey = 'document';
+        } else {
+          uploadEndpoint = '/api/v1/files/upload';
+          formDataKey = 'file';
+        }
+
+        // 파일 업로드
+        const uploadFormData = new FormData();
+        uploadFormData.append(formDataKey, file);
+
+        const uploadResponse = await apiCall(uploadEndpoint, {
+          method: 'POST',
+          headers: {}, // FormData는 Content-Type을 자동으로 설정
+          body: uploadFormData as any, // FormData는 직접 전달
+        });
+
+        if (!uploadResponse.ok) {
+          const uploadError = await uploadResponse.json();
+          throw new Error(uploadError.message || '파일 업로드에 실패했습니다.');
+        }
+
+        const uploadData = await uploadResponse.json();
+        if (uploadData.success && uploadData.data?.url) {
+          attachmentUrl = uploadData.data.url;
+        } else {
+          throw new Error('파일 업로드 응답이 올바르지 않습니다.');
+        }
+      }
+
+      // 퀘스트 제출
       const payload = {
-        content: submitText
-        // attachment: ... (현재 백엔드 구조상 파일 객체는 JSON에 담을 수 없음)
+        content: submitText,
+        attachment_url: attachmentUrl
       };
 
-      // apiCall이 FormData를 자동으로 감지하여 적절한 Content-Type을 설정
       const response = await apiCall(endpoint, {
         method: method,
         headers: {
