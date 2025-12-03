@@ -17,6 +17,7 @@ interface MyPersonalQuest {
     submitted_at?: string;
     comment?: string;
   };
+  comment?: string; // 백엔드에서 최상위 레벨로 전달되는 코멘트
 }
 
 const formatDateTime = (isoString: string | undefined) => {
@@ -484,7 +485,7 @@ export function StudentQuests() {
               <fieldset style={{ padding: "10px", backgroundColor: "var(--color-white)" }}>
                 <legend>Teacher's Comment</legend>
                 <p style={{ whiteSpace: "pre-wrap", margin: 0 }}>
-                  {selectedQuest?.submission?.comment || "작성된 코멘트가 없습니다."}
+                  {selectedQuest?.comment || selectedQuest?.submission?.comment || "작성된 코멘트가 없습니다."}
                 </p>
               </fieldset>
 

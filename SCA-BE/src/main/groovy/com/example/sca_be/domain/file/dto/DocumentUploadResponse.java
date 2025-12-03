@@ -12,3 +12,7 @@ public class DocumentUploadResponse {
     private Long size;
     private String contentType;
 }
+
+
+
+

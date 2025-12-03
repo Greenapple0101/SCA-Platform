@@ -155,11 +155,14 @@ export function RaidCreatePageNew() {
   const canCreate = useMemo(() => {
     if (!creationInfo || !selectedClass) return false;
 
+    const bossHp = Number(formState.boss_hp);
     return Boolean(
       formState.raid_name?.trim() &&
       formState.start_date?.trim() &&
       formState.end_date?.trim() &&
       formState.difficulty &&
+      formState.boss_hp?.trim() &&
+      bossHp > 0 &&
       formState.reward_coral > 0
     );
   }, [creationInfo, formState, selectedClass]);
@@ -170,6 +173,7 @@ export function RaidCreatePageNew() {
     if (!formState.start_date) fields.push('시작 날짜');
     if (!formState.end_date) fields.push('종료 날짜');
     if (!formState.difficulty) fields.push('난이도');
+    if (!formState.boss_hp || Number(formState.boss_hp) <= 0) fields.push('보스 HP');
     return fields;
   }, [formState]);
 
@@ -395,15 +399,23 @@ export function RaidCreatePageNew() {
                     </SelectContent>
                   </Select>
 
-                  {/* 선택된 난이도에 따른 보스 HP 표시 (자동) */}
-                  {selectedDifficultyInfo && (
-                    <div className="mt-2 p-3 bg-gray-100 rounded-lg border border-gray-200 text-center">
-                      <span className="text-sm text-gray-600 block">보스 총 체력</span>
-                      <span className="text-xl font-bold text-red-600">
-                        {selectedDifficultyInfo.hp.toLocaleString()} HP
-                      </span>
-                    </div>
-                  )}
+                  {/* 보스 HP 수동 입력 */}
+                  <div className="mt-3 space-y-2">
+                    <Label className="text-sm font-semibold">보스 HP (수동 입력)</Label>
+                    <Input
+                      type="number"
+                      value={formState.boss_hp}
+                      onChange={(e) => setFormState((prev) => ({ ...prev, boss_hp: e.target.value }))}
+                      placeholder={selectedDifficultyInfo ? `기본값: ${selectedDifficultyInfo.hp.toLocaleString()}` : "HP를 입력하세요"}
+                      min="1"
+                      className="border-2 border-gray-300 rounded-lg"
+                    />
+                    {selectedDifficultyInfo && (
+                      <p className="text-xs text-gray-500">
+                        권장값: {selectedDifficultyInfo.min_hp.toLocaleString()} ~ {selectedDifficultyInfo.max_hp.toLocaleString()} HP
+                      </p>
+                    )}
+                  </div>
                 </div>
 
                 <div className="space-y-3">

@@ -73,7 +73,10 @@ public class ClassesService {
                 .map(c -> {
                     int studentCount = studentRepository.countByClasses(c);
 
-                    int waitingQuestCount = 0;//이거 나중에 퀘스트 관련 로직 잡고 고쳐야 함
+                    // 해당 반의 승인 대기 중인 퀘스트 수 계산
+                    List<QuestAssignment> pendingAssignments = questAssignmentRepository.findPendingAssignmentsByTeacherAndClass(
+                            teacher.getMemberId(), QuestStatus.SUBMITTED, c.getClassId());
+                    int waitingQuestCount = pendingAssignments.size();
 
                     return ClassListResponse.ClassSummary.builder()
                             .classId(c.getClassId())
@@ -141,7 +144,10 @@ public class ClassesService {
         List<StudentListResponse.StudentInfo> studentInfos = students.stream()
                 .map(s -> {
 
-                    int pendingQuests = random.nextInt(4);//일단 quest 구현 전이어서 랜덤으로 설정
+                    // 실제 승인 대기 중인 퀘스트 수 계산 (SUBMITTED 상태)
+                    List<QuestAssignment> pendingAssignments = questAssignmentRepository.findByStudentAndStatusIn(
+                            s.getMemberId(), Arrays.asList(QuestStatus.SUBMITTED));
+                    int pendingQuests = pendingAssignments.size();
 
                     // StudentsFactors 조회
                     StudentsFactors studentFactor = studentsFactorsRepository.findByStudent(s).orElse(null);
