@@ -160,3 +160,94 @@
 | <img src="https://github.com/user-attachments/assets/bcf6b256-5c6b-4c40-acbc-6e54eb9a75de" width="260" /> | <img src="https://github.com/user-attachments/assets/2cc15163-484b-461d-a7b0-c1b650784bac" width="260" /> | <img src="https://github.com/user-attachments/assets/eebf6042-027c-44d8-8218-d7772d6f1992" width="260" /> |
 
 ---
+## Contributions
+
+### Infrastructure / Deployment (Troubleshooting & Stabilization)
+배포 실패를 단순 복구가 아니라 재현 가능한 빌드, 자동화된 배포, 운영 검증, 재발 방지(변수화/체크리스트)로 구조화하여 안정화했습니다.
+
+- EC2 Docker 빌드에서 JAR 누락으로 COPY 실패
+  - 조치: Dockerfile을 멀티스테이지 빌드로 전환하여 컨테이너 내부에서 Gradle 빌드 수행, `build/libs/*.jar` 다중 산출물에도 안전하도록 보완
+  - 성과: 호스트 선빌드 의존 제거, 배포 재현성 확보  
+  - Reference: commits `a50c076`, `bff33a5`, `30858d1` / `DEPLOY-EC2-FIXED.md`
+
+- Docker 빌드 실패가 캐시/잔여 리소스 영향으로 반복 발생
+  - 조치: 캐시 제거 및 환경 정리 절차를 표준 루틴으로 고정(`--no-cache`, orphan 제거, system prune)
+  - 성과: “재시도”가 아니라 “절차”로 실패를 제거하는 운영 습관 정착  
+  - Commands: `docker compose build --no-cache`, `docker compose down --remove-orphans`, `docker system prune -a --volumes -f`
+
+- MySQL 연결 실패 원인 추측 반복
+  - 조치: 컨테이너 상태 → 네트워크 → 로그 → 외부 DB 설정(DB_URL/계정/권한) 순으로 점검 플로우 정리
+  - 성과: 운영 환경에서 재현 가능한 체크리스트로 장애 대응 체계화  
+  - Tools: `docker network inspect`, `docker logs`, SG/Firewall 점검
+
+- `ddl-auto: validate`에서 스키마 미존재로 부팅 실패
+  - 조치: validate 모드는 테이블 선생성이 전제임을 문서화, `schema.sql` 적용 여부 및 `SHOW TABLES;`로 검증 절차 고정
+  - 성과: 환경/초기화 상태에 따라 달라지는 장애를 “명시적 전제 + 검증”으로 통제
+
+- Jenkins 파이프라인 실패(권한/도커/포트)
+  - 조치: Console Output 기반 원인 확인 + 실행권한, Docker 데몬 접근권한, 컨테이너/포트 상태 점검 루틴 정리
+  - 성과: 배포 실패 시 `down → up -d` 및 컨테이너 재시작으로 즉시 복구 가능한 흐름 확보
+
+- 헬스체크 포트 불일치(8080 vs 8081)로 “정상인데 실패” 발생
+  - 조치: Compose 외부 노출 포트와 헬스체크 호출 포트 불일치 진단, URL/검증을 `${BACKEND_PORT}` 등 변수 기반으로 단일화
+  - 성과: 하드코딩 제거, 배포/검증/메시지의 단일 변수 세트 동기화
+
+- 운영에서 프론트 요청이 `localhost`로 호출되어 Load failed 발생
+  - 조치: Vite의 API URL이 빌드타임에 고정되는 점을 근거로 Jenkins 빌드 단계에서 `VITE_API_BASE_URL` 주입
+  - 성과: 배포 환경에 따른 실패를 CI 단계에서 선제 차단, 빌드 로그로 실제 URL 검증 가능  
+  - Reference: `PRODUCTION_API_URL_FIX.md`, `API_URL_SETUP_EXPLANATION.md`
+
+- 프록시/경로 불일치(`/api/api`, WebSocket 101 실패)
+  - 조치: FE URL 조합 규칙과 Nginx 프록시(/api, /ws) 규칙 정렬, Upgrade/Connection 헤더 명시
+  - 성과: 실시간 기능까지 포함한 운영 경로 안정화, 배포 후 `curl`/브라우저 네트워크 탭 기반 스모크 테스트 절차 고정
+
+---
+
+### Frontend Architecture (Component Design)
+화면 조립이 아니라 책임 단위 모듈 설계, 상태 전이 통제, 계약 기반 인터페이스를 중심으로 컴포넌트를 개발했습니다.
+
+- Responsibility-based 분리
+  - Feature/Page 책임: 학생/교사 도메인별 페이지 분리
+  - Action 책임: 생성/관리/승인/조회 유스케이스 기준 분리
+  - Presentation 책임: 재사용 UI는 `components/ui`로 격리
+  - Cross-cutting: 라우팅/컨텍스트/API는 전용 레이어로 분리
+
+- Directory를 Boundary로 사용(레이어드 아키텍처 관점)
+  - `components/ui`: Presentational primitives(표현 전용)
+  - `components/student`, `components/teacher`: 유스케이스 조합(애플리케이션 레벨)
+  - `utils/api.ts`: 인프라 어댑터(API 호출)
+  - `contexts/AppContext.tsx`: 도메인 상태 허브
+  - `routes/AppRoutes.tsx`: 정책 라우터/진입점
+
+- Contract-first 개발 프로세스
+  - 구현 전에 props/이벤트/callback/상태 소유권을 먼저 고정
+  - 페이지(유스케이스 조합)와 UI(표현/상호작용)를 분리하여 결합도 감소
+  - 외부 의존(API/라우팅/전역상태)은 상위 레이어에서 주입하여 UI 컴포넌트 독립성 유지
+
+---
+
+### Backend Module (Raid)
+게이미피케이션 서비스의 레이드(협동 보스전) 백엔드 모듈을 End-to-End로 설계 및 구현했습니다.
+
+- Domain & Lifecycle
+  - 상태 전이 모델링: `ACTIVE`, `COMPLETED`, `EXPIRED`, `TERMINATED`
+  - 도메인 메서드 중심 설계: 문자열 제어가 아닌 엔티티 내부 상태 변경 메서드로 일관성 확보
+
+- Data Model
+  - `Raid`: 레이드 수명주기 및 보스 HP 관리
+  - `Contribution`: (raid_id, student_id) 유니크 제약으로 중복 참여/누적 충돌 방지, 데미지 누적 메서드로 안전한 업데이트
+  - `RaidLog`: 공격/자원/잔여 HP/타입 기록, 페이징 조회 지원(감사/히스토리)
+
+- Business Logic
+  - 원자적 공격 처리: 자원 차감 → HP 반영 → 기여도 업데이트 → 로그 적재까지 단일 트랜잭션으로 처리하여 부분 실패 제거
+  - 권한 정책: RBAC 기반으로 교사(개설/종료/조회)와 학생(조회/공격) API 경계 분리
+  - 만료 처리: 별도 스케줄러 없이 조회 시점에 만료 판단 후 `EXPIRED`로 전환하는 Lazy 정합성 전략 적용
+
+- Realtime (WebSocket)
+  - 레이드 단위 룸 기반 세션 관리(ConcurrentHashMap), 실시간 로그 브로드캐스트로 몰입감 강화
+  - 잘못된 경로 접근 즉시 종료, 송신 실패 시 로깅을 통한 가용성 확보
+
+- Operational Stability
+  - `CustomException` + `ErrorCode` 체계로 권한/자원/상태 불일치 등 실패 케이스를 명확히 표준화
+  - 동시성 경합(HP 갱신, 보상 중복 등) 시나리오를 인지하고 유니크 제약/하한 보정/트랜잭션 일관성으로 방어
+  - 향후 개선 로드맵: 낙관적 락(@Version), 비관적 락, 원자적 업데이트 쿼리 도입 검토
